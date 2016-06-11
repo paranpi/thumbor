@@ -41,6 +41,7 @@ RUN  \
 	build-essential \
 	python-pip \
 	vim \
+	locales \
 	wget \  
 	python-dev \ 
 	libboost-python-dev && \
@@ -48,6 +49,11 @@ RUN  \
 
 ENV HOME /root/
 ENV SHELL bash
+RUN localedef -i en_US -f UTF-8 en_US.UTF-8
+ENV LANG en_US.UTF-8  
+ENV LANGUAGE en_US:en  
+ENV LC_ALL en_US.UTF-8  
+
 WORKDIR /root
 RUN pip install -U pip
 RUN pip install coveralls
@@ -58,5 +64,5 @@ RUN export PATH=/tmp/ffmpeg-release:$PATH
 RUN git clone https://github.com/paranpi/thumbor.git
 WORKDIR /root/thumbor
 RUN make setup
-
+VOLUME /root/thumbor
 CMD ["/bin/bash"]
