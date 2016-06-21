@@ -257,6 +257,7 @@ Config.define(
     'OPTIMIZERS', [
         # 'thumbor.optimizers.jpegtran',
         # 'thumbor.optimizers.gifv',
+        # 'thumbor.optimizers.gif2webp',
     ], 'List of optimizers that thumbor will use to optimize images', 'Optimizers')
 
 # OPTIMIZER CONFIGURATIONS
@@ -271,6 +272,13 @@ Config.define(
     'FFMPEG_PATH',
     '/usr/local/bin/ffmpeg',
     'Path for the ffmpeg binary used to generate gifv(h.264)',
+    'Optimizers'
+)
+
+Config.define(
+    'GIF2WEBP_PATH',
+    '/usr/bin/gif2webp',
+    'Path for the gif2webp binary',
     'Optimizers'
 )
 

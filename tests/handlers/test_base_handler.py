@@ -953,6 +953,32 @@ class ImageOperationsWithJpegtranTestCase(BaseImagingTestCase):
         expect(response.code).to_equal(200)
 
 
+class ImageOperationsWithGif2WebpTestCase(BaseImagingTestCase):
+    def get_context(self):
+        cfg = Config(SECURITY_KEY='ACME-SEC')
+        cfg.LOADER = "thumbor.loaders.file_loader"
+        cfg.FILE_LOADER_ROOT_PATH = self.loader_path
+        cfg.AUTO_WEBP = True
+        cfg.FFMPEG_PATH = which('gif2webp')
+        cfg.OPTIMIZERS = [
+            'thumbor.optimizers.gif2webp',
+        ]
+
+        importer = Importer(cfg)
+        importer.import_modules()
+        server = ServerParameters(8889, 'localhost', 'thumbor.conf', None, 'info', None)
+        server.security_key = 'ACME-SEC'
+        ctx = Context(server, cfg, importer)
+        ctx.server.gifsicle_path = which('gifsicle')
+        return ctx
+
+    def test_should_convert_animated_gif_to_animated_webp(self):
+        response = self.fetch('/unsafe/200x200/animated_image.gif')
+
+        expect(response.code).to_equal(200)
+        expect(response.headers['Content-Type']).to_equal('image/webp')
+
+
 class ImageOperationsWithoutStorage(BaseImagingTestCase):
 
     def get_context(self):
