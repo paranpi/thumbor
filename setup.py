@@ -18,7 +18,6 @@ import logging
 
 tests_require = [
     "redis>=2.4.9,<3.0.0",
-    "tornado-pyvows>=0.6.0",
     "coverage",
     "mock>=1.0.1,<3.0.0",
     "raven",
@@ -31,7 +30,7 @@ tests_require = [
     "yanc",
     "remotecv",
     "pyssim",
-    "cairosvg",
+    "cairosvg!=1.0.21",
     "preggy>=1.3.0",
 ]
 
@@ -102,7 +101,7 @@ http://<thumbor-server>/300x200/smart/s.glbimg.com/et/bb/f/original/2011/03/24/V
             "derpconf>=0.2.0",
             "pexif>=0.15,<1.0",
             "statsd>=3.0.1",
-            "libthumbor",
+            "libthumbor>=1.3.2",
             "futures",
             "argparse",
             "pytz",

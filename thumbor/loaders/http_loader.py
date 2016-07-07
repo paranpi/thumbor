@@ -11,7 +11,7 @@
 import re
 from functools import partial
 from urlparse import urlparse
-from urllib2 import unquote,quote
+from urllib2 import unquote, quote
 
 import tornado.httpclient
 
@@ -21,7 +21,11 @@ from tornado.concurrent import return_future
 
 
 def encode_url(url):
-    return quote(url.encode('utf-8'),safe='~@#$&()*!+=:;,.?/\'')
+    if url == unquote(url):
+        return quote(url.encode('utf-8'), safe='~@#$&()*!+=:;,.?/\'')
+    else:
+        return url
+
 
 def quote_url(url):
     return encode_url(unquote(url).decode('utf-8'))

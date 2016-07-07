@@ -83,16 +83,6 @@ class BaseHandlerTestApp(tornado.web.Application):
         ])
 
 
-class BaseHandlerTestCase(TestCase):
-    def get_app(self):
-        self.context = self.get_context()
-        return BaseHandlerTestApp(self.context)
-
-    def test_can_get_an_error(self):
-        response = self.fetch('/error')
-        expect(response.code).to_equal(403)
-
-
 class BaseImagingTestCase(TestCase):
     @classmethod
     def setUpClass(cls, *args, **kw):
@@ -179,6 +169,17 @@ class ImagingOperationsWithHttpLoaderTestCase(BaseImagingTestCase):
         response = self.fetch(url)
         expect(response.code).to_equal(200)
 
+    def test_image_with_http_utf8_url(self):
+        with open('./tests/fixtures/images/maracujá.jpg', 'r') as f:
+            self.context.modules.storage.put(
+                quote(u"http://test.com/maracujá.jpg".encode('utf-8')),
+                f.read()
+            )
+
+        url = quote(u"/unsafe/http://test.com/maracujá.jpg".encode('utf-8'))
+        response = self.fetch(url)
+        expect(response.code).to_equal(200)
+
 
 class ImagingOperationsTestCase(BaseImagingTestCase):
     def get_context(self):
@@ -253,42 +254,57 @@ class ImagingOperationsTestCase(BaseImagingTestCase):
         expect(response.code).to_equal(400)
 
     def test_can_read_monochromatic_jpeg(self):
-        response = self.fetch('/unsafe/wellsford.jpg')
+        response = self.fetch('/unsafe/grayscale.jpg')
         expect(response.code).to_equal(200)
         expect(response.body).to_be_jpeg()
 
     def test_can_read_image_with_small_width_and_no_height(self):
-        response = self.fetch('/unsafe/0x0:1681x596/1x/hidrocarbonetos_9.jpg')
+        response = self.fetch('/unsafe/0x0:1681x596/1x/image.jpg')
         expect(response.code).to_equal(200)
         expect(response.body).to_be_jpeg()
 
     def test_can_read_cmyk_jpeg(self):
-        response = self.fetch('/unsafe/merrit.jpg')
+        response = self.fetch('/unsafe/cmyk.jpg')
         expect(response.code).to_equal(200)
         expect(response.body).to_be_jpeg()
 
     def test_can_read_cmyk_jpeg_as_png(self):
-        response = self.fetch('/unsafe/filters:format(png)/merrit.jpg')
+        response = self.fetch('/unsafe/filters:format(png)/cmyk.jpg')
         expect(response.code).to_equal(200)
         expect(response.body).to_be_png()
 
     def test_can_read_image_svg_with_px_units_and_convert_png(self):
-        response = self.fetch('/unsafe/escudo.svg')
+        response = self.fetch('/unsafe/Commons-logo.svg')
         expect(response.code).to_equal(200)
         expect(response.body).to_be_png()
 
         engine = Engine(self.context)
         engine.load(response.body, '.png')
-        expect(engine.size).to_equal((1080, 1080))
+        expect(engine.size).to_equal((1024, 1376))
 
     def test_can_read_image_svg_with_inch_units_and_convert_png(self):
-        response = self.fetch('/unsafe/escudo-in.svg')
+        response = self.fetch('/unsafe/Commons-logo-inches.svg')
         expect(response.code).to_equal(200)
         expect(response.body).to_be_png()
 
         engine = Engine(self.context)
         engine.load(response.body, '.png')
-        expect(engine.size).to_equal((2400, 2400))
+        expect(engine.size).to_equal((2000, 2600))
+
+    def test_can_read_8bit_tiff_as_png(self):
+        response = self.fetch('/unsafe/gradient_8bit.tif')
+        expect(response.code).to_equal(200)
+        expect(response.body).to_be_png()
+
+    def test_can_read_16bit_lsb_tiff_as_png(self):
+        response = self.fetch('/unsafe/gradient_lsb_16bperchannel.tif')
+        expect(response.code).to_equal(200)
+        expect(response.body).to_be_png()
+
+    def test_can_read_16bit_msb_tiff_as_png(self):
+        response = self.fetch('/unsafe/gradient_msb_16bperchannel.tif')
+        expect(response.code).to_equal(200)
+        expect(response.body).to_be_png()
 
 
 class ImageOperationsWithoutUnsafeTestCase(BaseImagingTestCase):
@@ -403,43 +419,43 @@ class ImageOperationsWithAutoWebPTestCase(BaseImagingTestCase):
         expect(response.body).to_be_webp()
 
     def test_should_bad_request_if_bigger_than_75_megapixels(self):
-        response = self.get_as_webp('/unsafe/16384.png')
+        response = self.get_as_webp('/unsafe/16384x16384.png')
         expect(response.code).to_equal(400)
 
     def test_should_bad_request_if_bigger_than_75_megapixels_jpeg(self):
-        response = self.get_as_webp('/unsafe/gisele.jpg')
+        response = self.get_as_webp('/unsafe/9643x10328.jpg')
         expect(response.code).to_equal(400)
 
     def test_should_not_convert_animated_gifs_to_webp(self):
-        response = self.get_as_webp('/unsafe/animated_image.gif')
+        response = self.get_as_webp('/unsafe/animated.gif')
 
         expect(response.code).to_equal(200)
         expect(response.headers).not_to_include('Vary')
         expect(response.body).to_be_gif()
 
     def test_should_convert_image_with_small_width_and_no_height(self):
-        response = self.get_as_webp('/unsafe/0x0:1681x596/1x/hidrocarbonetos_9.jpg')
+        response = self.get_as_webp('/unsafe/0x0:1681x596/1x/image.jpg')
 
         expect(response.code).to_equal(200)
         expect(response.body).to_be_webp()
 
     def test_should_convert_monochromatic_jpeg(self):
-        response = self.get_as_webp('/unsafe/wellsford.jpg')
+        response = self.get_as_webp('/unsafe/grayscale.jpg')
         expect(response.code).to_equal(200)
         expect(response.body).to_be_webp()
 
     def test_should_convert_cmyk_jpeg(self):
-        response = self.get_as_webp('/unsafe/merrit.jpg')
+        response = self.get_as_webp('/unsafe/cmyk.jpg')
         expect(response.code).to_equal(200)
         expect(response.body).to_be_webp()
 
     def test_shouldnt_convert_cmyk_jpeg_if_format_specified(self):
-        response = self.get_as_webp('/unsafe/filters:format(png)/merrit.jpg')
+        response = self.get_as_webp('/unsafe/filters:format(png)/cmyk.jpg')
         expect(response.code).to_equal(200)
         expect(response.body).to_be_png()
 
     def test_shouldnt_convert_cmyk_jpeg_if_gif(self):
-        response = self.get_as_webp('/unsafe/filters:format(gif)/merrit.jpg')
+        response = self.get_as_webp('/unsafe/filters:format(gif)/cmyk.jpg')
         expect(response.code).to_equal(200)
         expect(response.body).to_be_gif()
 
@@ -554,13 +570,13 @@ class ImageOperationsWithGifVTestCase(BaseImagingTestCase):
         return ctx
 
     def test_should_convert_animated_gif_to_mp4_when_filter_without_params(self):
-        response = self.fetch('/unsafe/filters:gifv()/animated_image.gif')
+        response = self.fetch('/unsafe/filters:gifv()/animated.gif')
 
         expect(response.code).to_equal(200)
         expect(response.headers['Content-Type']).to_equal('video/mp4')
 
     def test_should_convert_animated_gif_to_webm_when_filter_with_gifv_webm_param(self):
-        response = self.fetch('/unsafe/filters:gifv(webm)/animated_image.gif')
+        response = self.fetch('/unsafe/filters:gifv(webm)/animated.gif')
 
         expect(response.code).to_equal(200)
         expect(response.headers['Content-Type']).to_equal('video/webm')
@@ -583,7 +599,7 @@ class ImageOperationsImageCoverTestCase(BaseImagingTestCase):
         return ctx
 
     def test_can_get_image_cover(self):
-        response = self.fetch('/unsafe/filters:cover()/animated_image.gif')
+        response = self.fetch('/unsafe/filters:cover()/animated.gif')
 
         expect(response.code).to_equal(200)
         expect(response.headers['Content-Type']).to_equal('image/gif')
@@ -622,13 +638,13 @@ class ImageOperationsWithResultStorageTestCase(BaseImagingTestCase):
     @patch('tornado.ioloop.IOLoop.instance')
     def test_saves_image_to_result_storage(self, instance_mock):
         instance_mock.return_value = self.io_loop
-        response = self.fetch('/P_leK0uires4J3AXg5RkKfSWH4A=/animated_image.gif')
+        response = self.fetch('/gTr2Xr9lbzIa2CT_dL_O0GByeR0=/animated.gif')
         expect(response.code).to_equal(200)
 
         self.context.request = Mock(
             accepts_webp=False,
         )
-        expected_path = self.result_storage.normalize_path('P_leK0uires4J3AXg5RkKfSWH4A=/animated_image.gif')
+        expected_path = self.result_storage.normalize_path('gTr2Xr9lbzIa2CT_dL_O0GByeR0=/animated.gif')
         expect(expected_path).to_exist()
         expect(response.body).to_be_similar_to(animated_image())
 
@@ -667,12 +683,12 @@ class ImageOperationsResultStorageOnlyTestCase(BaseImagingTestCase):
         self.context.request = Mock(
             accepts_webp=False,
         )
-        expected_path = self.result_storage.normalize_path('P_leK0uires4J3AXg5RkKfSWH4A=/animated_image.gif')
+        expected_path = self.result_storage.normalize_path('gTr2Xr9lbzIa2CT_dL_O0GByeR0=/animated.gif')
         os.makedirs(dirname(expected_path))
         with open(expected_path, 'w') as img:
             img.write(animated_image())
 
-        response = self.fetch('/P_leK0uires4J3AXg5RkKfSWH4A=/animated_image.gif')
+        response = self.fetch('/gTr2Xr9lbzIa2CT_dL_O0GByeR0=/animated.gif')
         expect(response.code).to_equal(200)
         expect(response.body).to_be_similar_to(animated_image())
 
@@ -697,7 +713,7 @@ class ImageOperationsWithGifWithoutGifsicle(BaseImagingTestCase):
         return ctx
 
     def test_should_be_ok_with_single_frame_gif(self):
-        response = self.fetch('/HPbIwc4ACNupMwcOQMUnAEy9c_k=/not_so_animated_image.gif')
+        response = self.fetch('/5Xr8gyuWE7jL_VB72K0wvzTMm2U=/animated-one-frame.gif')
 
         expect(response.code).to_equal(200)
         expect(response.headers['Content-Type']).to_equal('image/gif')
@@ -732,12 +748,12 @@ class ImageOperationsWithGifWithoutGifsicleOnResultStorage(BaseImagingTestCase):
         self.context.request = Mock(
             accepts_webp=False,
         )
-        expected_path = self.result_storage.normalize_path('HPbIwc4ACNupMwcOQMUnAEy9c_k=/not_so_animated_image.gif')
+        expected_path = self.result_storage.normalize_path('5Xr8gyuWE7jL_VB72K0wvzTMm2U=/animated-one-frame.gif')
         os.makedirs(dirname(expected_path))
         with open(expected_path, 'w') as img:
             img.write(not_so_animated_image())
 
-        response = self.fetch('/HPbIwc4ACNupMwcOQMUnAEy9c_k=/not_so_animated_image.gif')
+        response = self.fetch('/5Xr8gyuWE7jL_VB72K0wvzTMm2U=/animated-one-frame.gif')
         expect(response.code).to_equal(200)
         expect(response.body).to_be_similar_to(not_so_animated_image())
 
@@ -764,7 +780,7 @@ class ImageOperationsWithMaxWidthAndMaxHeight(BaseImagingTestCase):
         return ctx
 
     def test_should_be_ok_but_150x150(self):
-        response = self.fetch('/unsafe/200x200/wellsford.jpg')
+        response = self.fetch('/unsafe/200x200/grayscale.jpg')
         engine = Engine(self.context)
         engine.load(response.body, '.jpg')
         expect(response.code).to_equal(200)
@@ -789,8 +805,39 @@ class ImageOperationsWithMaxPixels(BaseImagingTestCase):
         return ctx
 
     def test_should_error(self):
-        response = self.fetch('/unsafe/200x200/wellsford.jpg')
+        response = self.fetch('/unsafe/200x200/grayscale.jpg')
         expect(response.code).to_equal(400)
+
+
+class ImageOperationsWithRespectOrientation(BaseImagingTestCase):
+    def get_context(self):
+        cfg = Config(SECURITY_KEY='ACME-SEC')
+        cfg.LOADER = "thumbor.loaders.file_loader"
+        cfg.FILE_LOADER_ROOT_PATH = self.loader_path
+        cfg.STORAGE = "thumbor.storages.no_storage"
+        cfg.RESPECT_ORIENTATION = True
+
+        importer = Importer(cfg)
+        importer.import_modules()
+        server = ServerParameters(8889, 'localhost', 'thumbor.conf', None, 'info', None)
+        server.security_key = 'ACME-SEC'
+        self.context = Context(server, cfg, importer)
+        self.context.server.gifsicle_path = which('gifsicle')
+        return self.context
+
+    def test_should_be_ok_when_orientation_exif(self):
+        response = self.fetch('/unsafe/10_years_of_Wikipedia_by_Guillaume_Paumier.jpg')
+        expect(response.code).to_equal(200)
+        engine = Engine(self.context)
+        engine.load(response.body, '.jpg')
+        expect(engine.size).to_equal((4052, 3456))
+
+    def test_should_be_ok_without_orientation_exif(self):
+        response = self.fetch('/unsafe/20x20.jpg')
+        expect(response.code).to_equal(200)
+        engine = Engine(self.context)
+        engine.load(response.body, '.jpg')
+        expect(engine.size).to_equal((20, 20))
 
 
 class EngineLoadException(BaseImagingTestCase):
@@ -869,7 +916,7 @@ class ImageOperationsWithJpegtranTestCase(BaseImagingTestCase):
         return ctx
 
     def test_should_optimize_jpeg(self):
-        response = self.fetch('/unsafe/200x200/hidrocarbonetos_9.jpg')
+        response = self.fetch('/unsafe/200x200/image.jpg')
 
         tmp_fd, tmp_file_path = tempfile.mkstemp(suffix='.jpg')
         f = os.fdopen(tmp_fd, 'w')
@@ -904,6 +951,32 @@ class ImageOperationsWithJpegtranTestCase(BaseImagingTestCase):
         self.fetch('/unsafe/meta/800x400/image.jpg')
         response = self.fetch('/unsafe/meta/800x400/image.jpg')
         expect(response.code).to_equal(200)
+
+
+class ImageOperationsWithGif2WebpTestCase(BaseImagingTestCase):
+    def get_context(self):
+        cfg = Config(SECURITY_KEY='ACME-SEC')
+        cfg.LOADER = "thumbor.loaders.file_loader"
+        cfg.FILE_LOADER_ROOT_PATH = self.loader_path
+        cfg.AUTO_WEBP = True
+        cfg.FFMPEG_PATH = which('gif2webp')
+        cfg.OPTIMIZERS = [
+            'thumbor.optimizers.gif2webp',
+        ]
+
+        importer = Importer(cfg)
+        importer.import_modules()
+        server = ServerParameters(8889, 'localhost', 'thumbor.conf', None, 'info', None)
+        server.security_key = 'ACME-SEC'
+        ctx = Context(server, cfg, importer)
+        ctx.server.gifsicle_path = which('gifsicle')
+        return ctx
+
+    def test_should_convert_animated_gif_to_animated_webp(self):
+        response = self.fetch('/unsafe/200x200/animated_image.gif')
+
+        expect(response.code).to_equal(200)
+        expect(response.headers['Content-Type']).to_equal('image/webp')
 
 
 class ImageOperationsWithoutStorage(BaseImagingTestCase):
@@ -942,12 +1015,52 @@ class ImageOperationsWithoutStorage(BaseImagingTestCase):
         expect(obj['thumbor']['source']['frameCount']).to_equal(1)
 
     def test_meta_frame_count_with_gif(self):
-        response = self.fetch('/unsafe/meta/animated_image.gif')
+        response = self.fetch('/unsafe/meta/animated.gif')
         expect(response.code).to_equal(200)
         obj = loads(response.body)
         expect(obj['thumbor']['source']['frameCount']).to_equal(2)
 
     def test_max_bytes(self):
-        response = self.fetch('/unsafe/filters:max_bytes(10000)/conselheira_tutelar.jpg')
+        response = self.fetch('/unsafe/filters:max_bytes(35000)/Giunchedi%2C_Filippo_January_2015_01.jpg')
         expect(response.code).to_equal(200)
-        expect(len(response.body)).to_be_lesser_or_equal_to(10000)
+        expect(len(response.body)).to_be_lesser_or_equal_to(35000)
+
+    def test_max_bytes_impossible(self):
+        response = self.fetch('/unsafe/filters:max_bytes(1000)/Giunchedi%2C_Filippo_January_2015_01.jpg')
+        expect(response.code).to_equal(200)
+        expect(len(response.body)).to_be_greater_than(1000)
+
+
+class TranslateCoordinatesTestCase(TestCase):
+    def setUp(self, *args, **kwargs):
+        super(TranslateCoordinatesTestCase, self).setUp(*args, **kwargs)
+        coords = self.get_coords()
+        self.translate_crop_coordinates = BaseHandler.translate_crop_coordinates(
+            original_width=coords['original_width'],
+            original_height=coords['original_height'],
+            width=coords['width'],
+            height=coords['height'],
+            crop_left=coords['crop_left'],
+            crop_top=coords['crop_top'],
+            crop_right=coords['crop_right'],
+            crop_bottom=coords['crop_bottom']
+        )
+
+    def get_coords(self):
+        return {
+            'original_width': 3000,
+            'original_height': 2000,
+            'width': 1200,
+            'height': 800,
+            'crop_left': 100,
+            'crop_top': 100,
+            'crop_right': 200,
+            'crop_bottom': 200,
+            'expected_crop': (40, 40, 80, 80)
+        }
+
+    def test_should_be_a_list_of_coords(self):
+        expect(self.translate_crop_coordinates).to_be_instance_of(tuple)
+
+    def test_should_translate_from_original_to_resized(self):
+        expect(self.translate_crop_coordinates).to_equal(self.get_coords()['expected_crop'])
