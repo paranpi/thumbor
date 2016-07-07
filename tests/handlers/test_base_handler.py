@@ -959,7 +959,7 @@ class ImageOperationsWithGif2WebpTestCase(BaseImagingTestCase):
         cfg.LOADER = "thumbor.loaders.file_loader"
         cfg.FILE_LOADER_ROOT_PATH = self.loader_path
         cfg.AUTO_WEBP = True
-        cfg.FFMPEG_PATH = which('gif2webp')
+        cfg.GIF2WEBP_PATH = which('gif2webp')
         cfg.OPTIMIZERS = [
             'thumbor.optimizers.gif2webp',
         ]
