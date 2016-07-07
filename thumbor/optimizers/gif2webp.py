@@ -13,7 +13,6 @@ import subprocess
 
 from thumbor.optimizers import BaseOptimizer
 
-from thumbor.utils import logger
 
 class Optimizer(BaseOptimizer):
 

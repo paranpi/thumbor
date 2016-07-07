@@ -973,7 +973,7 @@ class ImageOperationsWithGif2WebpTestCase(BaseImagingTestCase):
         return ctx
 
     def test_should_convert_animated_gif_to_animated_webp(self):
-        response = self.fetch('/unsafe/200x200/animated_image.gif')
+        response = self.fetch('/unsafe/200x200/animated.gif')
 
         expect(response.code).to_equal(200)
         expect(response.headers['Content-Type']).to_equal('image/webp')
