@@ -25,6 +25,7 @@ RUN  \
   python-lxml \
 	webp \ 
 	gifsicle \
+  pngcrush \ 
 	python-scipy \ 
 	libcairo2-dev \ 
 	gfortran \
