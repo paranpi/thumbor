@@ -373,6 +373,7 @@ class ImageOperationsWithAutoWebPTestCase(BaseImagingTestCase):
         cfg.FILE_LOADER_ROOT_PATH = self.loader_path
         cfg.STORAGE = "thumbor.storages.no_storage"
         cfg.AUTO_WEBP = True
+        cfg.USE_GIFSICLE_ENGINE = True
 
         importer = Importer(cfg)
         importer.import_modules()
@@ -545,6 +546,7 @@ class ImageOperationsWithGifVTestCase(BaseImagingTestCase):
         cfg.OPTIMIZERS = [
             'thumbor.optimizers.gifv',
         ]
+        cfg.USE_GIFSICLE_ENGINE = True
 
         importer = Importer(cfg)
         importer.import_modules()
