@@ -28,6 +28,7 @@ except ImportError:
 
 
 FORMATS = {
+    '.tif': 'PNG',  # serve tif as png
     '.jpg': 'JPEG',
     '.jpeg': 'JPEG',
     '.gif': 'GIF',
@@ -62,7 +63,8 @@ class Engine(BaseEngine):
     def create_image(self, buffer):
         try:
             img = Image.open(BytesIO(buffer))
-        except Image.DecompressionBombWarning:
+        except Image.DecompressionBombWarning as e:
+            logger.warning("[PILEngine] create_image failed: {0}".format(e))
             return None
         self.icc_profile = img.info.get('icc_profile')
         self.transparency = img.info.get('transparency')
@@ -208,6 +210,7 @@ class Engine(BaseEngine):
 
         results = img_buffer.getvalue()
         img_buffer.close()
+        self.extension = ext
         return results
 
     def read_multiple(self, images, extension=None):
